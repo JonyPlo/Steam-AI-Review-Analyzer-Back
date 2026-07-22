@@ -397,7 +397,7 @@ const INTRO_DESTACADOS_HISTORICOS =
 //   - 'recientes':  { pctMuestra }  -> % calculado sobre la muestra de 50 reseñas más valoradas
 //                    de los últimos 30 días. El cierre es una RECOMENDACIÓN (comprar/probar/
 //                    esperar/no recomendar), nunca una nota /10.
-//   - 'historicos': { pctOficial, notaOficial, descOficialEsp } -> % OFICIAL de Steam sobre todo
+//   - 'historicos': { pctOficial, descOficialEsp } -> % OFICIAL de Steam sobre todo
 //                    el historial (miles de reseñas). El cierre es una NOTA /10, nunca una
 //                    recomendación de compra (para no contradecir a la columna de "recientes").
 function construirPromptCompleto(tipo, textoContexto, destacados, datosCierre) {
@@ -421,12 +421,12 @@ function construirPromptCompleto(tipo, textoContexto, destacados, datosCierre) {
   let instruccionCierre
   if (tipo === 'recientes') {
     const { pctMuestra } = datosCierre
-    instruccionCierre = `Por último, redactá una frase de cierre en español (máximo 2 líneas) con una RECOMENDACIÓN concreta y honesta: si conviene comprarlo ya, probarlo, esperar una rebaja o más actualizaciones, o directamente no recomendarlo por ahora. NO uses el formato "puntuación X/10", esto tiene que sonar a consejo, no a nota escolar. Basate en que, entre las reseñas más valoradas de los últimos 30 días que leíste, un ${pctMuestra}% son positivas, combinando eso con la impresión general que te dejaron esas reseñas. Usá EXACTAMENTE el número ${pctMuestra}% (no inventes ni redondees a otro valor) y no menciones ninguna cantidad de reseñas (nada de "50 reseñas").`
-  } else {
-    const { pctOficial, notaOficial, descOficialEsp } = datosCierre
+    instruccionCierre = `Por último, redactá una frase de cierre en español (máximo 2 líneas) con una RECOMENDACIÓN concreta y honesta: si vale la pena comprarlo ya, esperar una rebaja, o directamente evitarlo por ahora. NO uses el formato "puntuación X/10", esto tiene que sonar a consejo, no a nota escolar. Empezá OBLIGATORIAMENTE con "De las reseñas más recientes (últimos 30 días), un ${pctMuestra}% son positivas, por lo que" y completá la frase con tu recomendación concreta (o reformulalo ligeramente pero siempre arrancando con ese scope temporal explícito). Usá EXACTAMENTE el número ${pctMuestra}% y no menciones ninguna cantidad de reseñas (nada de "50 reseñas").`
+} else {
+    const { pctOficial, descOficialEsp } = datosCierre
     instruccionCierre =
       pctOficial !== null
-        ? `Por último, redactá una frase de cierre en español (máximo 2 líneas) del estilo "le doy una puntuación de ${notaOficial}/10 ya que el ${pctOficial}% de las reseñas de Steam son positivas" (podés variar la redacción, pero mantené ese espíritu: una NOTA numérica sobre 10, NO una recomendación de compra tipo "cómpralo ya" o "esperá una rebaja" — eso lo dice la otra columna). Steam clasifica estas reseñas como "${descOficialEsp}". Usá EXACTAMENTE esos números (${pctOficial}% y ${notaOficial}/10) y no menciones ninguna cantidad de reseñas.`
+        ? `Por último, redactá una frase de cierre en español (máximo 2 líneas) con una conclusión/recomendación basada en el panorama histórico del juego. NO es una recomendación de compra inmediata tipo "cómpralo ya" o "esperá una rebaja" (eso lo hace la otra columna, que analiza los últimos 30 días). Empezá OBLIGATORIAMENTE con "En vista general desde su lanzamiento, el juego tiene un ${pctOficial}% de reseñas positivas (Steam las clasifica como «${descOficialEsp}»), por lo que" y completá con tu conclusión (recomiendo / no recomiendo / recomiendo con reservas, etc.). NO uses formato de puntuación tipo "X/10" ni ningún número en formato "x/x". Usá EXACTAMENTE el número ${pctOficial}% y no menciones ninguna cantidad de reseñas.`
         : `Por último, redactá una frase de cierre en español (máximo 2 líneas) aclarando que no hay datos oficiales suficientes de Steam como para dar una puntuación confiable, pero mencioná brevemente la impresión general que te dejaron las reseñas que leíste.`
   }
 
@@ -578,12 +578,10 @@ async function procesarColumna(tipo, insumos, datosOficiales) {
     cierreFallback = `Con un ${pctMuestra}% de opiniones positivas entre las reseñas más valoradas de los últimos 30 días, ${veredictoSegunPct(pctMuestra)}.`
   } else {
     const { pctOficial, descOficialEsp } = datosOficiales
-    const notaOficial =
-      pctOficial !== null ? (pctOficial / 10).toFixed(1) : null
-    datosCierre = { pctOficial, notaOficial, descOficialEsp }
+    datosCierre = { pctOficial, descOficialEsp }
     cierreFallback =
       pctOficial !== null
-        ? `Le doy una puntuación de ${notaOficial}/10 ya que el ${pctOficial}% de las reseñas oficiales de Steam son positivas (${descOficialEsp}).`
+        ? `En vista general desde su lanzamiento, el juego tiene un ${pctOficial}% de reseñas positivas (${descOficialEsp}), por lo que lo recomiendo como una buena opción.`
         : 'No hay datos oficiales suficientes de Steam como para dar una puntuación confiable.'
   }
 
